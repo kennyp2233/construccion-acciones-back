@@ -66,7 +66,19 @@ class Acciones {
         }
     }
 
+    async deleteAcciones(ids: number[]): Promise<number> {
+        try {
+            const deletedAcciones = await acciones.destroy({
+                where: {
+                    id_accion: ids
+                }
+            });
 
+            return deletedAcciones;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 export default Acciones;

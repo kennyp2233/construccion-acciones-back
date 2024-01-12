@@ -39,9 +39,16 @@ router.put('/acciones/:id', async (req, res) => {
     }
 });
 
-router.delete('/acciones/:id', async (req, res) => {
+router.delete('/acciones/:id?', async (req, res) => {
     try {
-        await acc.deleteAccion(Number(req.params.id));
+        if (typeof req.body === 'object' && 'ids' in req.body) {
+            const ids = req.body.ids as number[];
+            await acc.deleteAcciones(ids);
+            console.log(req.body);
+        } else {
+            await acc.deleteAccion(Number(req.params.id));
+        }
+
         res.status(200).json({ message: 'Accion deleted successfully' });
     } catch (error) {
         res.status(400).json(error);
