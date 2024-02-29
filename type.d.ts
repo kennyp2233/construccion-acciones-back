@@ -14,9 +14,3 @@ export interface AccionesCreationAttributesI {
     cantidad_acciones: number;
     costo_total: number;
 }
-
-// definir un tipo
-export type a = {
-    siglas_accion: "AMZN"|| "AAPL" || "GOOGL" || "FB" || "MSFT" || "TSLA";
-}
-
