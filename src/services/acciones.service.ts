@@ -1,6 +1,8 @@
 import acciones from "../db/models/acciones.model";
 import { AccionesCreationAttributesI, AccionesAtributesI } from "../../type";
 
+import {getStockPrice} from '../api/api.acciones';
+
 class Acciones {
     async getAcciones(): Promise<AccionesAtributesI[]> {
         try {
@@ -20,25 +22,52 @@ class Acciones {
         }
     }
 
-    async createAccion(accion: AccionesCreationAttributesI) {
+    async createAccion(accion: AccionesCreationAttributesI): Promise<AccionesAtributesI> {
         try {
-            return await acciones.create(accion as any);
+            const precioActual = await getStockPrice(accion.siglas_accion, new Date(), new Date());
+            const costoTotal = accion.precio_compra * accion.cantidad_acciones;
+            const cambio = accion.precio_compra - precioActual;
+            const gananciaPerdida = cambio * costoTotal;
+
+            const nuevaAccion = {
+                ...accion,
+                costo_total: costoTotal,
+                cambio: cambio,
+                ganancia_perdida: gananciaPerdida
+            };
+
+            return await acciones.create(nuevaAccion) as any as AccionesAtributesI;
+
         } catch (error) {
             throw error;
         }
     }
 
-    async updateAccion(id: number, aerolinea: AccionesCreationAttributesI): Promise<AccionesAtributesI | null> {
+    async updateAccion(id: number, accion: AccionesCreationAttributesI): Promise<AccionesAtributesI | null> {
         try {
             const accionToUpdate = await acciones.findByPk(id);
+
             if (accionToUpdate) {
-                await acciones.update(aerolinea, {
+                const precioActual = await getStockPrice(accion.siglas_accion, new Date(), new Date());
+                const costoTotal = accion.precio_compra * accion.cantidad_acciones;
+                const cambio = accion.precio_compra - precioActual;
+                const gananciaPerdida = cambio * costoTotal;
+
+                const nuevaAccion = {
+                    ...accion,
+                    costo_total: costoTotal,
+                    cambio: cambio,
+                    ganancia_perdida: gananciaPerdida
+                };
+
+                await acciones.update(nuevaAccion, {
                     where: {
                         id_accion: id
                     }
                 });
-                const updatedAerolinea = await acciones.findByPk(id);
-                return updatedAerolinea ? updatedAerolinea.toJSON() as AccionesAtributesI : null;
+
+                const updatedAccion = await acciones.findByPk(id);
+                return updatedAccion ? updatedAccion.toJSON() as AccionesAtributesI : null;
             }
             return null;
         } catch (error) {
@@ -81,4 +110,4 @@ class Acciones {
     }
 }
 
-export default Acciones;
+export default new Acciones();
