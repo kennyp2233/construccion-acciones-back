@@ -1,29 +1,65 @@
-const baseUrl = 'https://api.polygon.io/v2/aggs/ticker';
-const ticker = 'AAPL';
-const range = '1/day';
-const startDate = '2023-01-09';
-const endDate = '2023-01-09';
-const adjusted = true;
-const sort = 'asc';
-const limit = 120;
-const apiKey = '48OvSHcWgZF6Sbf0LhFYyfU2lujA5Ou7';
+import AccionesService from '../services/acciones.service';
+import AccionesModel from '../db/models/acciones.model';
+import { AccionesCreationAttributesI, AccionesAtributesI } from "../../type";
+import { sendMessageToClients } from '../websocket';
+import WebSocket from 'ws';
 
-export function getStockPrice(ticker: string, startDate: Date, endDate: Date): Promise<number> {
-    try {
-        const formattedStartDate = startDate.toISOString().split('T')[0];
-        const formattedEndDate = endDate.toISOString().split('T')[0];
-        const url = `${baseUrl}/${ticker}/range/${range}/${formattedStartDate}/${formattedEndDate}?adjusted=${adjusted}&sort=${sort}&limit=${limit}&apiKey=${apiKey}`;
+const subscribedSymbols = new Set();
 
-        return fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                console.log('Data:', data, url);
-                const currentPrice = data.results[0].c;
+export const socket = new WebSocket('wss://ws.twelvedata.com/v1/quotes/price?apikey=2f8c9936a0ec4f6381a9cf6522e9f408');
 
-                return currentPrice;
-            });
-    } catch (error) {
-        console.error('Error ocurrio al consumir api de polygon:', error);
-        throw error;
+socket.addEventListener('open', function (event) {
+    AccionesModel.findAll().then((acciones: any) => {
+        acciones.map((accion: any) => {
+            subscribe(accion.siglas_accion);
+        });
+    });
+
+});
+
+socket.addEventListener('message', function (event) {
+    const data = JSON.parse(event.data as any);
+    const receivedSymbol = data.symbol;
+
+    AccionesService.getAcciones().then((acciones: any) => {
+        acciones.map((accion: AccionesAtributesI) => {
+            if (accion.siglas_accion === receivedSymbol) {
+                accion.cambio = (data.price - accion.precio_compra) / accion.precio_compra;
+                accion.ganancia_perdida = accion.costo_total * (1 + accion.cambio);
+                //console.log(accion);
+                AccionesService.updateAccion(accion.id_accion, accion).then((updatedAccion: any) => {
+                    sendMessageToClients(updatedAccion);
+                });
+            }
+        });
+    });
+
+});
+
+
+export var subscribe = function (symbol: any) {
+    if (!subscribedSymbols.has(symbol)) {
+        socket.send(JSON.stringify({
+            "action": 'subscribe',
+            "params": {
+                "symbols": `${symbol}`
+            }
+        }));
+        console.log('Subscribed to ' + symbol);
+        subscribedSymbols.add(symbol);
+    } else {
+        console.log('Already subscribed to ' + symbol);
     }
+
 }
+export var unsubscribe = function (symbol: any) {
+    socket.send(JSON.stringify({
+        "action": 'unsubscribe', "params": {
+            "symbols": `${symbol}`
+        }
+    }));
+    socket.send(JSON.stringify({ 'type': 'unsubscribe', 'symbol': symbol }))
+}
+
+
+
