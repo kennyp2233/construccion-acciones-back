@@ -6,9 +6,21 @@ Content-Type: application/json
 {
     "siglas_accion": "EUR/USD",
     "fecha_compra": "2020-01-01",
-    "precio_compra": 1000,
+    "precio_compra": 0.5,
     "cantidad_acciones":  10,
-    "costo_total": 10000
+    "costo_total": 5
+}
+
+###
+POST http://127.0.0.1:3000/api/v1/acciones HTTP/1.1
+Content-Type: application/json
+
+{
+    "siglas_accion": "EUR/USD",
+    "fecha_compra": "2020-01-01",
+    "precio_compra": 1.5,
+    "cantidad_acciones":  10,
+    "costo_total": 15
 }
 ###
 POST http://127.0.0.1:3000/api/v1/acciones HTTP/1.1
@@ -21,12 +33,13 @@ Content-Type: application/json
     "cantidad_acciones":  5,
     "costo_total": 1250
 }
+
 ###
 POST http://127.0.0.1:3000/api/v1/acciones HTTP/1.1
 Content-Type: application/json
 
 {
-    "siglas_accion": "MSFT",
+    "siglas_accion": "VFIAX",
     "fecha_compra": "2023-01-10",
     "precio_compra": 150,
     "cantidad_acciones":  10,
@@ -49,5 +62,5 @@ DELETE http://127.0.0.1:3000/api/v1/acciones HTTP/1.1
 Content-Type: application/json
 
 {
-    "ids":[9]
+    "ids":[16]
 }
